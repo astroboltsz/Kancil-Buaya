@@ -2,7 +2,13 @@
 <html lang="ms">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <!-- Meta Tag Khas Telefon / Web App -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    
     <title>Sang Kancil: Misi Penawar Hutan 3D</title>
     
     <!-- CSS Dependencies & Fonts -->
@@ -19,17 +25,28 @@
         }
 
         body, html { 
-            width: 100vw; height: 100dvh; 
+            width: 100vw; 
+            height: 100dvh; 
             overflow: hidden; 
             font-family: 'Plus Jakarta Sans', sans-serif; 
             background: #061108; color: #fff; 
             touch-action: none; 
         }
 
+        /* Fallback Skrin Penuh untuk iOS / Mobile Browser */
+        body.pseudo-fullscreen {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100dvh !important;
+            z-index: 999999;
+        }
+
         canvas { display: block; }
 
         #canvas-container { 
-            width: 100vw; height: 100vh; 
+            width: 100vw; height: 100dvh; 
             position: absolute; top: 0; left: 0; 
             z-index: 1; touch-action: none;
         }
@@ -135,7 +152,7 @@
         .btn-action-green { background-color: #22c55e; color: #ffffff; }
 
         #minimap-canvas {
-            width: 80px; height: 80px; border-radius: 50%;
+            width: 70px; height: 70px; border-radius: 50%;
             border: 2px solid #eab308; background: rgba(6, 17, 8, 0.9);
             box-shadow: 0 0 8px rgba(0,0,0,0.5);
         }
@@ -148,6 +165,26 @@
             font-size: 1.2rem; position: relative;
         }
         .inventory-slot.has-item { border-color: #eab308; background: rgba(234, 179, 8, 0.2); }
+
+        /* Butang Skrin Penuh Khas Mudah Sentuh */
+        .btn-mobile-fullscreen {
+            position: fixed;
+            top: 12px;
+            right: 12px;
+            z-index: 999;
+            background: rgba(234, 179, 8, 0.9);
+            color: #000;
+            border: 2px solid #fff;
+            border-radius: 12px;
+            padding: 8px 12px;
+            font-weight: 800;
+            font-size: 13px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            touch-action: manipulation;
+        }
     </style>
 
     <!-- Three.js Library & GLTFLoader -->
@@ -156,17 +193,19 @@
 </head>
 <body>
 
+    <!-- BUTANG SKRIN PENUH DEDIKASI PERANTI MOBILE -->
+    <button class="btn-mobile-fullscreen" onclick="toggleFullscreen()">
+        <span>⛶</span> <span id="fs-btn-text">Skrin Penuh</span>
+    </button>
+
     <div id="canvas-container"></div>
     <div id="nametag-container" class="absolute inset-0 pointer-events-none z-20"></div>
 
     <!-- MAIN MENU -->
     <div id="main-menu" class="absolute inset-0 z-40 flex flex-col justify-between items-center p-6 glass-panel border-none rounded-none">
-        <nav class="w-full flex justify-between items-center max-w-5xl z-10">
+        <nav class="w-full flex justify-between items-center max-w-5xl z-10 pr-24">
             <div class="text-lg font-black tracking-wider text-amber-400">SANG KANCIL 3D</div>
-            <div class="flex items-center gap-2">
-                <button class="btn-menu !p-2 !rounded-lg text-xs" onclick="toggleFullscreen()" title="Mod Skrin Penuh">⛶ Skrin Penuh</button>
-                <div class="text-xs text-slate-300 font-semibold hidden sm:block">Game Pendidikan Interaktif</div>
-            </div>
+            <div class="text-xs text-slate-300 font-semibold hidden sm:block">Game Pendidikan Interaktif</div>
         </nav>
 
         <div class="text-center my-auto max-w-xl z-10">
@@ -198,25 +237,25 @@
     <!-- IN-GAME HUD -->
     <div id="game-hud" class="absolute inset-0 z-30 pointer-events-none hidden flex-col justify-between p-3 sm:p-4">
         <!-- Top HUD -->
-        <div class="flex justify-between items-start gap-2 pt-2">
+        <div class="flex justify-between items-start gap-2 pt-2 pr-28">
             <!-- Health & Info -->
-            <div class="glass-panel p-2.5 rounded-xl pointer-events-auto border-amber-500/30 w-auto min-w-[150px] space-y-1 text-[11px] font-bold">
-                <div class="flex justify-between items-center text-rose-400 gap-3">
+            <div class="glass-panel p-2.5 rounded-xl pointer-events-auto border-amber-500/30 w-auto min-w-[130px] space-y-1 text-[11px] font-bold">
+                <div class="flex justify-between items-center text-rose-400 gap-2">
                     <span>Nyawa:</span>
-                    <span id="hud-lives" class="text-sm">❤️❤️❤️</span>
+                    <span id="hud-lives" class="text-xs">❤️❤️❤️</span>
                 </div>
-                <div class="flex justify-between items-center text-amber-400 gap-3">
+                <div class="flex justify-between items-center text-amber-400 gap-2">
                     <span>Penawar:</span>
-                    <span id="hud-flower-status" class="text-xs text-rose-400 font-extrabold">Belum Dijumpai</span>
+                    <span id="hud-flower-status" class="text-[10px] text-rose-400 font-extrabold">Belum Dijumpai</span>
                 </div>
             </div>
 
             <!-- Mission Box -->
-            <div id="mission-box" class="glass-panel p-3 rounded-xl pointer-events-auto border-amber-400/40 max-w-xs text-xs space-y-1">
+            <div id="mission-box" class="glass-panel p-2.5 rounded-xl pointer-events-auto border-amber-400/40 max-w-xs text-xs space-y-1 hidden sm:block">
                 <div class="font-black text-amber-400 flex items-center gap-1">
                     <span>🎯 MISI UTAMA</span>
                 </div>
-                <ul class="text-[11px] text-slate-200 space-y-0.5">
+                <ul class="text-[10px] text-slate-200 space-y-0.5">
                     <li id="misi-1" class="text-amber-300 font-bold">➢ Keluar dari rumah & cari Sungai Buaya</li>
                     <li id="misi-2" class="text-slate-400">☐ Tanya haiwan hutan tentang penawar</li>
                     <li id="misi-3" class="text-slate-400">☐ Tipu Ketua Buaya</li>
@@ -225,13 +264,10 @@
                 </ul>
             </div>
 
-            <!-- Minimap & Menu -->
+            <!-- Minimap & Settings -->
             <div class="flex items-center gap-2 pointer-events-auto">
-                <canvas id="minimap-canvas" width="80" height="80"></canvas>
-                <div class="flex flex-col gap-1.5">
-                    <button class="glass-panel p-2 rounded-lg text-xs font-bold text-amber-400 hover:bg-amber-400/20" onclick="toggleFullscreen()" title="Mod Skrin Penuh">⛶</button>
-                    <button class="glass-panel p-2 rounded-lg text-xs font-bold text-amber-400 hover:bg-amber-400/20" onclick="toggleModal('modal-settings')" title="Tetapan">⚙️</button>
-                </div>
+                <canvas id="minimap-canvas" width="70" height="70"></canvas>
+                <button class="glass-panel p-2 rounded-lg text-xs font-bold text-amber-400 hover:bg-amber-400/20" onclick="toggleModal('modal-settings')" title="Tetapan">⚙️</button>
             </div>
         </div>
 
@@ -242,7 +278,7 @@
 
         <!-- Inventory Panel -->
         <div class="self-center glass-panel px-4 py-2 rounded-2xl border-white/20 text-center pointer-events-auto mb-1">
-            <div class="text-[9px] uppercase font-black text-slate-400 tracking-wider mb-1.5 flex justify-between items-center gap-4">
+            <div class="text-[9px] uppercase font-black text-slate-400 tracking-wider mb-1 flex justify-between items-center gap-4">
                 <span>INVENTORI ITEM</span>
             </div>
             <div id="inventory-slots-container" class="flex gap-2">
@@ -293,11 +329,10 @@
             </div>
 
             <div class="space-y-3 text-xs text-slate-200">
-                <!-- Paparan Skrin Penuh -->
                 <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-800 flex justify-between items-center">
                     <div>
                         <div class="font-bold text-amber-400">⛶ Paparan Skrin Penuh</div>
-                        <div class="text-[10px] text-slate-400">Aktifkan mod skrin penuh untuk pengalaman terbaik</div>
+                        <div class="text-[10px] text-slate-400">Mod skrin penuh tanpa bar browser</div>
                     </div>
                     <button onclick="toggleFullscreen()" class="btn-menu !px-3 !py-1.5 text-xs">Tukar</button>
                 </div>
@@ -322,22 +357,13 @@
                     </div>
                 </div>
 
-                <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-800 space-y-2">
-                    <h4 class="font-bold text-amber-400">🕹️ Mod Kawalan Telefon:</h4>
-                    <select id="control-type-select" onchange="changeControlType(this.value)" class="w-full bg-slate-800 border border-slate-600 rounded p-1.5 text-xs text-white">
-                        <option value="dpad">Arrow Controller (D-Pad)</option>
-                        <option value="joystick">Analog Touch Zone</option>
-                    </select>
-                </div>
-
                 <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-800 space-y-1.5">
                     <h4 class="font-bold text-green-400">⌨️ Kawalan PC:</h4>
                     <ul class="list-disc list-inside space-y-1 text-slate-300 text-[11px]">
-                        <li><b>WASD:</b> Bergerak</li>
-                        <li><b>Tetikus:</b> Putar Kamera 360°</li>
+                        <li><b>WASD / Arrow Keys:</b> Bergerak</li>
+                        <li><b>Sentuhan Skrin:</b> Putar Kamera 360°</li>
                         <li><b>[E]:</b> Interaksi (Cakap/Petik)</li>
                         <li><b>SPACE:</b> Melompat</li>
-                        <li><b>SHIFT:</b> Lari Pantas</li>
                     </ul>
                 </div>
             </div>
@@ -372,13 +398,6 @@
                 Anda telah berjaya membawa pulang Bunga Raya tepat pada waktunya. Ibu Sang Kancil kembali sihat dan seluruh hutan bergembira!
             </p>
 
-            <div class="p-3 bg-slate-900/80 rounded-xl border border-amber-400/30 text-left space-y-1 text-[11px]">
-                <div class="font-bold text-amber-400 mb-1">📜 Mesej Moral & Nilai Murni:</div>
-                <p class="text-slate-300 italic leading-normal">
-                    "Keberanian lahir daripada kasih sayang. Kebijaksanaan membantu kita mencari jalan ketika menghadapi cabaran. Gunakan kebijaksanaan untuk membantu orang lain dan bertindak dengan jujur serta bertanggungjawab."
-                </p>
-            </div>
-
             <button onclick="location.reload()" class="btn-menu w-full text-xs font-bold pulse-gold">🔄 Main Semula</button>
         </div>
     </div>
@@ -400,22 +419,47 @@
 
     <script>
         /* ==========================================
-           1. FULLSCREEN API HANDLER
+           1. HYBRID FULLSCREEN HANDLER (iOS + Android + Desktop)
            ========================================== */
+        let isPseudoFullscreen = false;
+
         function toggleFullscreen() {
-            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-                if (document.documentElement.requestFullscreen) {
-                    document.documentElement.requestFullscreen().catch(err => console.log(err));
-                } else if (document.documentElement.webkitRequestFullscreen) {
-                    document.documentElement.webkitRequestFullscreen();
+            const doc = document.documentElement;
+            const btnText = document.getElementById('fs-btn-text');
+
+            if (!document.fullscreenElement && !document.webkitFullscreenElement && !isPseudoFullscreen) {
+                // Cuba pengaktifan HTML5 Fullscreen API standard
+                if (doc.requestFullscreen) {
+                    doc.requestFullscreen().catch(err => enablePseudoFullscreen());
+                } else if (doc.webkitRequestFullscreen) {
+                    doc.webkitRequestFullscreen();
+                } else {
+                    // Fallback untuk iOS / iPhone Safari
+                    enablePseudoFullscreen();
                 }
+                if (btnText) btnText.innerText = "Kecilkan";
             } else {
                 if (document.exitFullscreen) {
-                    document.exitFullscreen().catch(err => console.log(err));
+                    document.exitFullscreen().catch(err => {});
                 } else if (document.webkitExitFullscreen) {
                     document.webkitExitFullscreen();
                 }
+                disablePseudoFullscreen();
+                if (btnText) btnText.innerText = "Skrin Penuh";
             }
+        }
+
+        function enablePseudoFullscreen() {
+            document.body.classList.add('pseudo-fullscreen');
+            isPseudoFullscreen = true;
+            window.scrollTo(0, 1);
+            onWindowResize();
+        }
+
+        function disablePseudoFullscreen() {
+            document.body.classList.remove('pseudo-fullscreen');
+            isPseudoFullscreen = false;
+            onWindowResize();
         }
 
         /* ==========================================
@@ -577,7 +621,7 @@
         }
 
         /* ==========================================
-           5. TEKSTUR RUMPUT & AIR (PROCEDURAL)
+           5. TEKSTUR RUMPUT & AIR
            ========================================== */
         function createGrassTexture() {
             const canvas = document.createElement('canvas');
@@ -667,6 +711,7 @@
             setupMouseAndTouchLook();
 
             window.addEventListener('resize', onWindowResize);
+            window.addEventListener('orientationchange', () => setTimeout(onWindowResize, 200));
         }
 
         function detectMobile() {
@@ -805,7 +850,7 @@
 
             container.addEventListener('pointerdown', (e) => {
                 if (!gameState.isPlaying || !isMobile) return;
-                if (e.target.closest('#mobile-controls') || e.target.closest('.glass-panel')) return;
+                if (e.target.closest('#mobile-controls') || e.target.closest('.glass-panel') || e.target.closest('.btn-mobile-fullscreen')) return;
                 if (cameraPointerId !== null) return;
                 cameraPointerId = e.pointerId;
                 isTouching = true; lastX = e.clientX; lastY = e.clientY;
@@ -923,7 +968,7 @@
                 document.getElementById('hud-flower-status').innerText = "Sudah Dikutip! 🌺";
                 document.getElementById('hud-flower-status').className = "text-xs text-amber-400 font-extrabold";
                 
-                showDialog("🌺", "Bunga Raya", "Anda berjaya memetik Bunga Raya! Tiba-tiba Ketua Buaya menyedari dia ditipu! BAB 6: LARI PULANG KE RUMAH IBU!");
+                showDialog("🌺", "Bunga Raya", "Anda berjaya memetik Bunga Raya! Tiba-tiba Ketua Buaya menyedari dia ditipu! LARI PULANG KE RUMAH IBU!");
                 triggerCrocodileChase();
                 return;
             }
@@ -975,6 +1020,7 @@
         function updateMissionUI(step) {
             for(let i=1; i<=5; i++) {
                 const el = document.getElementById(`misi-${i}`);
+                if (!el) continue;
                 if (i < step) {
                     el.className = "text-slate-500 line-through";
                 } else if (i === step) {
@@ -1093,19 +1139,19 @@
         function drawMiniMap() {
             const canvas = document.getElementById('minimap-canvas');
             const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, 80, 80);
+            ctx.clearRect(0, 0, 70, 70);
 
-            const scale = 1.2;
-            const px = 40 + camera.position.x * scale;
-            const pz = 40 + camera.position.z * scale;
+            const scale = 1.0;
+            const px = 35 + camera.position.x * scale;
+            const pz = 35 + camera.position.z * scale;
 
             ctx.fillStyle = '#22c55e';
             ctx.beginPath(); ctx.arc(px, pz, 3.5, 0, Math.PI * 2); ctx.fill();
 
             ctx.fillStyle = '#ef4444';
             crocs3D.forEach(c => {
-                const cx = 40 + c.mesh.position.x * scale;
-                const cz = 40 + c.mesh.position.z * scale;
+                const cx = 35 + c.mesh.position.x * scale;
+                const cz = 35 + c.mesh.position.z * scale;
                 ctx.fillRect(cx - 2, cz - 2, 4, 4);
             });
         }
@@ -1126,7 +1172,7 @@
             document.getElementById('game-hud').classList.add('flex');
             gameState.isPlaying = true;
 
-            bgmAudio.play().catch(e => console.log("Perlu interaksi untuk mainkan audio:", e));
+            bgmAudio.play().catch(e => console.log("Audio perlu interaksi:", e));
         }
 
         function endGameWin() {
@@ -1137,15 +1183,6 @@
 
         function toggleModal(id) {
             document.getElementById(id).classList.toggle('hidden');
-        }
-
-        function changeControlType(type) {
-            const container = document.getElementById('dpad-container');
-            if (type === 'joystick') {
-                container.style.opacity = '0.5';
-            } else {
-                container.style.opacity = '1.0';
-            }
         }
 
         function onWindowResize() {
