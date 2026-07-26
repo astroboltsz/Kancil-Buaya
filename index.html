@@ -163,7 +163,10 @@
     <div id="main-menu" class="absolute inset-0 z-40 flex flex-col justify-between items-center p-6 glass-panel border-none rounded-none">
         <nav class="w-full flex justify-between items-center max-w-5xl z-10">
             <div class="text-lg font-black tracking-wider text-amber-400">SANG KANCIL 3D</div>
-            <div class="text-xs text-slate-300 font-semibold">Game Pendidikan Interaktif</div>
+            <div class="flex items-center gap-2">
+                <button class="btn-menu !p-2 !rounded-lg text-xs" onclick="toggleFullscreen()" title="Mod Skrin Penuh">⛶ Skrin Penuh</button>
+                <div class="text-xs text-slate-300 font-semibold hidden sm:block">Game Pendidikan Interaktif</div>
+            </div>
         </nav>
 
         <div class="text-center my-auto max-w-xl z-10">
@@ -225,7 +228,10 @@
             <!-- Minimap & Menu -->
             <div class="flex items-center gap-2 pointer-events-auto">
                 <canvas id="minimap-canvas" width="80" height="80"></canvas>
-                <button class="glass-panel p-2 rounded-lg text-xs font-bold text-amber-400" onclick="toggleModal('modal-settings')">⚙️</button>
+                <div class="flex flex-col gap-1.5">
+                    <button class="glass-panel p-2 rounded-lg text-xs font-bold text-amber-400 hover:bg-amber-400/20" onclick="toggleFullscreen()" title="Mod Skrin Penuh">⛶</button>
+                    <button class="glass-panel p-2 rounded-lg text-xs font-bold text-amber-400 hover:bg-amber-400/20" onclick="toggleModal('modal-settings')" title="Tetapan">⚙️</button>
+                </div>
             </div>
         </div>
 
@@ -287,6 +293,15 @@
             </div>
 
             <div class="space-y-3 text-xs text-slate-200">
+                <!-- Paparan Skrin Penuh -->
+                <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-800 flex justify-between items-center">
+                    <div>
+                        <div class="font-bold text-amber-400">⛶ Paparan Skrin Penuh</div>
+                        <div class="text-[10px] text-slate-400">Aktifkan mod skrin penuh untuk pengalaman terbaik</div>
+                    </div>
+                    <button onclick="toggleFullscreen()" class="btn-menu !px-3 !py-1.5 text-xs">Tukar</button>
+                </div>
+
                 <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-800 space-y-3">
                     <h4 class="font-bold text-cyan-400">🔊 Kawalan Kelantangan Audio:</h4>
                     
@@ -385,7 +400,26 @@
 
     <script>
         /* ==========================================
-           1. URL ASET MODEL & AUDIO SYSTEM
+           1. FULLSCREEN API HANDLER
+           ========================================== */
+        function toggleFullscreen() {
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                if (document.documentElement.requestFullscreen) {
+                    document.documentElement.requestFullscreen().catch(err => console.log(err));
+                } else if (document.documentElement.webkitRequestFullscreen) {
+                    document.documentElement.webkitRequestFullscreen();
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen().catch(err => console.log(err));
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                }
+            }
+        }
+
+        /* ==========================================
+           2. URL ASET MODEL & AUDIO SYSTEM
            ========================================== */
         const MODEL_URLS = {
             tree: "https://raw.githubusercontent.com/smassrgb/Kancil-Buaya/main/Tree%20by%20Marc%20Sol%C3%A0%20-%206Yjt8nIwLsD.glb",
@@ -470,7 +504,7 @@
         }
 
         /* ==========================================
-           2. GAME STATE
+           3. GAME STATE
            ========================================== */
         let gameState = {
             lives: 3,
@@ -502,7 +536,7 @@
         let riverMesh, riverGeo, waterTexture;
 
         /* ==========================================
-           3. NAMETAG SYSTEM
+           4. NAMETAG SYSTEM
            ========================================== */
         function createNameTag(parentMesh, text, heightOffset = 1.8, colorHex = '#ffffff') {
             const container = document.getElementById('nametag-container');
@@ -543,20 +577,16 @@
         }
 
         /* ==========================================
-           4. PENJANAAN TEKSTUR RUMPUT & AIR (PROCEDURAL)
+           5. TEKSTUR RUMPUT & AIR (PROCEDURAL)
            ========================================== */
-        // Penjana Tekstur Rumput Kanvas
         function createGrassTexture() {
             const canvas = document.createElement('canvas');
-            canvas.width = 512;
-            canvas.height = 512;
+            canvas.width = 512; canvas.height = 512;
             const ctx = canvas.getContext('2d');
 
-            // Warna Dasar Tanah / Rumput
             ctx.fillStyle = '#1b4d24';
             ctx.fillRect(0, 0, 512, 512);
 
-            // Melukis Jalur & Bilah-Bilah Rumput
             const grassColors = ['#14421b', '#236e32', '#2d8a40', '#38a84e', '#1e5929', '#42bd5a'];
             for (let i = 0; i < 35000; i++) {
                 const x = Math.random() * 512;
@@ -577,17 +607,14 @@
             return texture;
         }
 
-        // Penjana Tekstur Riak Air Kanvas
         function createWaterTexture() {
             const canvas = document.createElement('canvas');
-            canvas.width = 512;
-            canvas.height = 512;
+            canvas.width = 512; canvas.height = 512;
             const ctx = canvas.getContext('2d');
 
             ctx.fillStyle = '#0284c7';
             ctx.fillRect(0, 0, 512, 512);
 
-            // Lukis Jalur Caustics / Riak Air
             ctx.fillStyle = '#ffffff';
             for (let i = 0; i < 400; i++) {
                 const x = Math.random() * 512;
@@ -607,7 +634,7 @@
         }
 
         /* ==========================================
-           5. THREE.JS ENVIRONMENT BUILD
+           6. THREE.JS ENVIRONMENT BUILD
            ========================================== */
         function init3D() {
             const container = document.getElementById('canvas-container');
@@ -627,7 +654,6 @@
 
             detectMobile();
 
-            // Lighting
             const ambientLight = new THREE.AmbientLight(0xfef08a, 0.85);
             scene.add(ambientLight);
 
@@ -662,36 +688,26 @@
         }
 
         function buildWorld() {
-            // Tekstur Rumput
             const grassTexture = createGrassTexture();
             const groundMat = new THREE.MeshStandardMaterial({ 
-                map: grassTexture,
-                roughness: 0.8,
-                metalness: 0.1
+                map: grassTexture, roughness: 0.8, metalness: 0.1
             });
 
-            // Tebing Rumah & Hutan
             const homeGroundGeo = new THREE.BoxGeometry(60, 2, 25);
             const homeGround = new THREE.Mesh(homeGroundGeo, groundMat);
             homeGround.position.set(0, -1, 20);
             scene.add(homeGround);
 
-            // Tebing Seberang Sungai
             const farGround = new THREE.Mesh(homeGroundGeo, groundMat);
             farGround.position.set(0, -1, -20);
             scene.add(farGround);
 
-            // SUNGAI BUAYA DENGAN TEKSTUR & OMBARK DINAMIK 3D
+            // SUNGAI BUAYA
             riverGeo = new THREE.PlaneGeometry(60, 20, 60, 20);
             waterTexture = createWaterTexture();
             
             const riverMat = new THREE.MeshStandardMaterial({ 
-                color: 0x0284c7, 
-                map: waterTexture,
-                roughness: 0.05,
-                metalness: 0.3,
-                transparent: true, 
-                opacity: 0.88 
+                color: 0x0284c7, map: waterTexture, roughness: 0.05, metalness: 0.3, transparent: true, opacity: 0.88 
             });
             
             riverMesh = new THREE.Mesh(riverGeo, riverMat);
@@ -699,69 +715,47 @@
             riverMesh.position.set(0, 0.05, 0);
             scene.add(riverMesh);
 
-            // Tapak Platform Rumah
             const baseGeo = new THREE.BoxGeometry(7, 1, 7);
             const baseMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.8 });
             const homeBase = new THREE.Mesh(baseGeo, baseMat);
             homeBase.position.set(-10, 0.5, 24);
             scene.add(homeBase);
 
-            // 1. Rumah Ibu Kancil (.glb)
             loadGLTFModel(MODEL_URLS.house, 5.0, (model) => {
-                houseMesh = model;
-                houseMesh.position.set(-10, 1.0, 24);
-                scene.add(houseMesh);
+                houseMesh = model; houseMesh.position.set(-10, 1.0, 24); scene.add(houseMesh);
                 createNameTag(houseMesh, "🏡 Rumah Ibu Kancil", 3.0, '#facc15');
             });
 
-            // 2. Ibu Kancil (.glb)
             loadGLTFModel(MODEL_URLS.motherDeer, 0.32, (model) => {
-                motherMesh = model;
-                motherMesh.position.set(-3, 0, 23);
-                scene.add(motherMesh);
+                motherMesh = model; motherMesh.position.set(-3, 0, 23); scene.add(motherMesh);
                 createNameTag(motherMesh, "🦌 Ibu Sang Kancil", 2.2, '#f87171');
             });
 
-            // 3. Burung Hantu Tua (.glb)
             loadGLTFModel(MODEL_URLS.owl, 0.18, (model) => {
-                owlMesh = model;
-                owlMesh.position.set(4, 0, 18);
-                scene.add(owlMesh);
+                owlMesh = model; owlMesh.position.set(4, 0, 18); scene.add(owlMesh);
                 createNameTag(owlMesh, "🦉 Burung Hantu Tua", 1.5, '#c084fc');
             });
 
-            // 4. Arnab Hutan (.glb)
             loadGLTFModel(MODEL_URLS.rabbit, 0.25, (model) => {
-                rabbitMesh = model;
-                rabbitMesh.position.set(10, 0, 14);
-                scene.add(rabbitMesh);
+                rabbitMesh = model; rabbitMesh.position.set(10, 0, 14); scene.add(rabbitMesh);
                 createNameTag(rabbitMesh, "🐇 Arnab Hutan", 1.2, '#e2e8f0');
             });
 
-            // 5. Ketua Buaya (.glb)
             loadGLTFModel(MODEL_URLS.blackCaiman, 0.4, (model) => {
-                kingCrocMesh = model;
-                kingCrocMesh.position.set(0, 0.85, 8);
-                scene.add(kingCrocMesh);
+                kingCrocMesh = model; kingCrocMesh.position.set(0, 0.85, 8); scene.add(kingCrocMesh);
                 createNameTag(kingCrocMesh, "👑 Ketua Buaya", 1.5, '#ef4444');
             });
 
-            // 6. Bunga Raya (.glb)
             loadGLTFModel(MODEL_URLS.flower, 1.2, (model) => {
-                flowerMesh = model;
-                flowerMesh.position.set(0, 1.0, -25);
-                scene.add(flowerMesh);
+                flowerMesh = model; flowerMesh.position.set(0, 1.0, -25); scene.add(flowerMesh);
                 createNameTag(flowerMesh, "🌺 Bunga Raya", 1.8, '#facc15');
             });
 
-            // 7. Pokok-Pokok Hiasan
             const treePositions = [
                 [-18, 15], [-22, 25], [18, 18], [22, 26], [-12, 12], [14, 12],
                 [-20, -22], [20, -22], [-10, -28], [12, -26], [0, -28]
             ];
-            treePositions.forEach(pos => {
-                createTree(pos[0], pos[1]);
-            });
+            treePositions.forEach(pos => { createTree(pos[0], pos[1]); });
         }
 
         function createTree(x, z) {
@@ -777,7 +771,6 @@
                 loadGLTFModel(MODEL_URLS.blackCaiman, 0.4, (croc) => {
                     croc.position.set(0, 0.85, zPos);
                     scene.add(croc);
-
                     createNameTag(croc, `🐊 Buaya #${i+1}`, 1.2, '#4ade80');
                     crocs3D.push({ mesh: croc, zPos: zPos, phase: i });
                 });
@@ -789,7 +782,7 @@
         }
 
         /* ==========================================
-           6. KAWALAN PLAYER & KAMERA
+           7. KAWALAN PLAYER & KAMERA
            ========================================== */
         function setupMouseAndTouchLook() {
             const container = document.getElementById('canvas-container');
@@ -891,7 +884,7 @@
         }
 
         /* ==========================================
-           7. DIALOG & INTERAKSI STORY
+           8. DIALOG & INTERAKSI STORY
            ========================================== */
         function interactAction() {
             playSFX('interact');
@@ -1006,7 +999,7 @@
         }
 
         /* ==========================================
-           8. MAIN GAME LOOP & ANIMASI OMBARK AIR
+           9. MAIN GAME LOOP
            ========================================== */
         function updatePlayerPhysics(delta, time) {
             if (!gameState.isPlaying) return;
@@ -1029,7 +1022,6 @@
                 camera.position.z += moveVec.z * speed * delta;
             }
 
-            // Graviti
             velocityY += GRAVITY * delta;
             camera.position.y += velocityY * delta;
 
@@ -1039,7 +1031,6 @@
                 isGrounded = true;
             }
 
-            // Semak Jatuh Sungai
             if (camera.position.z < 7.5 && camera.position.z > -9.5 && camera.position.y <= 1.7) {
                 let safeOnCroc = false;
                 crocs3D.forEach(c => {
@@ -1052,13 +1043,10 @@
                 }
             }
 
-            // ANIMASI TEKSTUR AIR & OMBARK DINAMIK 3D
             if (riverMesh) {
-                // Pergerakan Tekstur Aliran Air
                 waterTexture.offset.x += delta * 0.06;
                 waterTexture.offset.y += delta * 0.03;
 
-                // Deformasi Bucu Gelombang Air (Wave Animation)
                 const pos = riverGeo.attributes.position;
                 for (let i = 0; i < pos.count; i++) {
                     const u = pos.getX(i);
@@ -1070,17 +1058,14 @@
                 riverGeo.computeVertexNormals();
             }
 
-            // Animasi Buaya Terapung
             crocs3D.forEach((c, idx) => {
                 c.mesh.position.x = Math.sin(time * 0.003 + idx) * 0.6;
             });
 
-            // Fasa Kejaran Buaya
             if (gameState.chasePhase && kingCrocMesh) {
                 kingCrocMesh.position.z += delta * 5.0;
             }
 
-            // HUD Interaksi Prompt
             const pPos = new THREE.Vector3(camera.position.x, 0, camera.position.z);
             const prompt = document.getElementById('interaction-prompt');
             let near = false;
