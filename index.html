@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sang Kancil: Misi Penawar Hutan 3D</title>
+    
+    <!-- CSS Dependencies & Fonts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <style>
+        * { 
+            box-sizing: border-box; 
+            margin: 0; padding: 0;
+            user-select: none; 
+            -webkit-user-select: none; 
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body, html { 
+            width: 100vw; height: 100dvh; 
+            overflow: hidden; 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background: #061108; color: #fff; 
+            touch-action: none; 
+        }
+
+        canvas { display: block; }
+
+        #canvas-container { 
+            width: 100vw; height: 100vh; 
+            position: absolute; top: 0; left: 0; 
+            z-index: 1; touch-action: none;
+        }
+
+        .name-tag {
+            position: absolute;
+            transform: translate(-50%, -100%);
+            padding: 2px 8px;
+            background: rgba(6, 17, 8, 0.85);
+            border: 1.5px solid rgba(255, 255, 255, 0.3);
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 800;
+            pointer-events: none;
+            white-space: nowrap;
+            z-index: 10;
+            backdrop-filter: blur(4px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+            transition: opacity 0.1s ease;
+        }
+
+        .glass-panel {
+            background: rgba(15, 30, 18, 0.88);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 12px rgba(234, 179, 8, 0.4); }
+            50% { box-shadow: 0 0 25px rgba(234, 179, 8, 0.85); }
+        }
+        .pulse-gold { animation: pulseGlow 2s infinite; }
+
+        .btn-menu {
+            background: linear-gradient(135deg, rgba(20, 50, 25, 0.9), rgba(10, 25, 12, 0.95));
+            border: 1.5px solid rgba(255, 255, 255, 0.2);
+            color: #f8fafc;
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            transition: all 0.2s ease;
+            display: flex; align-items: center; justify-content: center;
+            gap: 8px; cursor: pointer; touch-action: manipulation;
+        }
+        .btn-menu:hover {
+            border-color: #eab308;
+            background: linear-gradient(90deg, #eab308, #ca8a04);
+            color: #000000;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(234, 179, 8, 0.3);
+        }
+
+        /* PAD KAWALAN TELEFON */
+        #mobile-controls {
+            position: absolute;
+            bottom: 15px; left: 0;
+            width: 100vw; display: none;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding: 0 20px; z-index: 25;
+            pointer-events: none;
+        }
+
+        .d-pad {
+            display: grid;
+            grid-template-columns: repeat(3, 48px);
+            grid-template-rows: repeat(3, 48px);
+            gap: 4px; pointer-events: auto;
+        }
+
+        .btn-dpad {
+            background-color: rgba(15, 30, 18, 0.85);
+            color: white; border: 2px solid #eab308;
+            border-radius: 10px; font-size: 18px;
+            display: flex; justify-content: center; align-items: center;
+            touch-action: manipulation; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        .btn-dpad:active { background-color: #eab308; color: #000; transform: scale(0.95); }
+        #btn-up { grid-column: 2; grid-row: 1; }
+        #btn-left { grid-column: 1; grid-row: 2; }
+        #btn-right { grid-column: 3; grid-row: 2; }
+        #btn-down { grid-column: 2; grid-row: 3; }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 56px);
+            gap: 10px; pointer-events: auto;
+        }
+
+        .btn-action-mobile {
+            width: 56px; height: 56px; border-radius: 50%;
+            background-color: #e63946; border: 2px solid #ffffff;
+            color: #ffffff; font-weight: bold; font-size: 11px;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            touch-action: manipulation; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        .btn-action-blue { background-color: #38bdf8; color: #000000; }
+        .btn-action-green { background-color: #22c55e; color: #ffffff; }
+
+        #minimap-canvas {
+            width: 80px; height: 80px; border-radius: 50%;
+            border: 2px solid #eab308; background: rgba(6, 17, 8, 0.9);
+            box-shadow: 0 0 8px rgba(0,0,0,0.5);
+        }
+
+        .inventory-slot {
+            width: 44px; height: 44px; border-radius: 10px;
+            border: 1.5px solid rgba(255, 255, 255, 0.2);
+            background: rgba(30, 50, 35, 0.7);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem; position: relative;
+        }
+        .inventory-slot.has-item { border-color: #eab308; background: rgba(234, 179, 8, 0.2); }
+    </style>
+
+    <!-- Three.js Library & GLTFLoader -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+    <div id="nametag-container" class="absolute inset-0 pointer-events-none z-20"></div>
+
+    <!-- MAIN MENU -->
+    <div id="main-menu" class="absolute inset-0 z-40 flex flex-col justify-between items-center p-6 glass-panel border-none rounded-none">
+        <nav class="w-full flex justify-between items-center max-w-5xl z-10">
+            <div class="text-lg font-black tracking-wider text-amber-400">SANG KANCIL 3D</div>
+            <div class="text-xs text-slate-300 font-semibold">Game Pendidikan Interaktif</div>
+        </nav>
+
+        <div class="text-center my-auto max-w-xl z-10">
+            <div class="inline-block px-3 py-1 rounded-full bg-amber-500/10 border border-amber-400/30 text-amber-400 text-[11px] font-bold tracking-widest uppercase mb-3">
+                🌿 Pengembaraan Menyeberang Sungai
+            </div>
+            <h1 class="text-3xl sm:text-5xl font-black text-white tracking-wider mb-3">
+                Sang Kancil: Misi Penawar Hutan
+            </h1>
+            <p class="text-slate-300 text-xs sm:text-sm mb-6 font-medium leading-relaxed">
+                Ibu Sang Kancil jatuh sakit! Bantu Sang Kancil mencari Bunga Raya di seberang Sungai Buaya sebelum matahari terbenam untuk menyembuhkan ibunya.
+            </p>
+
+            <div class="w-full max-w-xs mx-auto space-y-2.5">
+                <button class="btn-menu w-full pulse-gold text-sm" onclick="startGame()">
+                    <span>▶</span> <span>MULA PERMAINAN</span>
+                </button>
+                <button class="btn-menu w-full text-cyan-400 border-cyan-500/50 text-sm" onclick="toggleModal('modal-settings')">
+                    <span>⚙️</span> <span>TETAPAN & KAWALAN</span>
+                </button>
+            </div>
+        </div>
+
+        <footer class="text-[10px] text-slate-400 text-center z-10">
+            &copy; 2026 Sang Kancil: Misi Penawar Hutan 3D
+        </footer>
+    </div>
+
+    <!-- IN-GAME HUD -->
+    <div id="game-hud" class="absolute inset-0 z-30 pointer-events-none hidden flex-col justify-between p-3 sm:p-4">
+        <!-- Top HUD -->
+        <div class="flex justify-between items-start gap-2 pt-2">
+            <!-- Health & Info -->
+            <div class="glass-panel p-2.5 rounded-xl pointer-events-auto border-amber-500/30 w-auto min-w-[150px] space-y-1 text-[11px] font-bold">
+                <div class="flex justify-between items-center text-rose-400 gap-3">
+                    <span>Nyawa:</span>
+                    <span id="hud-lives" class="text-sm">❤️❤️❤️</span>
+                </div>
+                <div class="flex justify-between items-center text-amber-400 gap-3">
+                    <span>Penawar:</span>
+                    <span id="hud-flower-status" class="text-xs text-rose-400 font-extrabold">Belum Dijumpai</span>
+                </div>
+            </div>
+
+            <!-- Mission Box -->
+            <div id="mission-box" class="glass-panel p-3 rounded-xl pointer-events-auto border-amber-400/40 max-w-xs text-xs space-y-1">
+                <div class="font-black text-amber-400 flex items-center gap-1">
+                    <span>🎯 MISI UTAMA</span>
+                </div>
+                <ul class="text-[11px] text-slate-200 space-y-0.5">
+                    <li id="misi-1" class="text-amber-300 font-bold">➢ Keluar dari rumah & cari Sungai Buaya</li>
+                    <li id="misi-2" class="text-slate-400">☐ Tanya haiwan hutan tentang penawar</li>
+                    <li id="misi-3" class="text-slate-400">☐ Tipu Ketua Buaya</li>
+                    <li id="misi-4" class="text-slate-400">☐ Menyeberangi sungai</li>
+                    <li id="misi-5" class="text-slate-400">☐ Petik Bunga Raya & Pulang</li>
+                </ul>
+            </div>
+
+            <!-- Minimap & Menu -->
+            <div class="flex items-center gap-2 pointer-events-auto">
+                <canvas id="minimap-canvas" width="80" height="80"></canvas>
+                <button class="glass-panel p-2 rounded-lg text-xs font-bold text-amber-400" onclick="toggleModal('modal-settings')">⚙️</button>
+            </div>
+        </div>
+
+        <!-- Prompt Interaksi -->
+        <div id="interaction-prompt" class="self-center glass-panel px-4 py-2 rounded-full border border-amber-400 text-amber-300 font-extrabold text-xs tracking-wide hidden mb-6 pointer-events-none text-center shadow-lg">
+            Tekan [E] / Sentuh untuk Interaksi
+        </div>
+
+        <!-- Inventory Panel -->
+        <div class="self-center glass-panel px-4 py-2 rounded-2xl border-white/20 text-center pointer-events-auto mb-1">
+            <div class="text-[9px] uppercase font-black text-slate-400 tracking-wider mb-1.5 flex justify-between items-center gap-4">
+                <span>INVENTORI ITEM</span>
+            </div>
+            <div id="inventory-slots-container" class="flex gap-2">
+                <div class="inventory-slot" id="slot-0"><span class="slot-icon" title="Bunga Raya">🌺</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DIALOG / HELAH MODAL -->
+    <div id="modal-dialog" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="glass-panel w-full max-w-md rounded-2xl p-6 border-amber-400/50 relative space-y-4">
+            <div class="flex items-center gap-3 border-b border-slate-700 pb-3">
+                <div id="npc-avatar" class="text-4xl">🦉</div>
+                <div>
+                    <h3 id="npc-title" class="text-lg font-black text-amber-400">Burung Hantu Tua</h3>
+                    <p id="npc-subtitle" class="text-[10px] text-slate-400">Penasihat Hutan</p>
+                </div>
+            </div>
+
+            <p id="npc-message" class="text-xs text-slate-200 leading-relaxed font-medium bg-slate-900/60 p-4 rounded-xl border border-slate-800">
+                ...
+            </p>
+
+            <div id="dialog-options" class="space-y-2 hidden">
+                <button onclick="chooseCrocodileOption(true)" class="btn-menu w-full text-xs text-left justify-start">
+                    ✅ "Raja Hutan mahu mengira jumlah buaya untuk jamuan!"
+                </button>
+                <button onclick="chooseCrocodileOption(false)" class="btn-menu w-full text-xs text-left justify-start text-rose-300">
+                    ❌ "Saya mahu menyeberang sungai ini sekarang!"
+                </button>
+                <button onclick="chooseCrocodileOption(false)" class="btn-menu w-full text-xs text-left justify-start text-rose-300">
+                    ❌ "Mari berlumba berenang dengan saya!"
+                </button>
+            </div>
+
+            <button id="btn-dialog-close" onclick="closeDialog()" class="btn-menu w-full text-xs font-bold text-amber-300 border-amber-500/50">
+                Faham & Teruskan 👍
+            </button>
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div id="modal-settings" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="glass-panel w-full max-w-md rounded-2xl p-6 border-cyan-500/40 relative space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center pb-2 border-b border-slate-700">
+                <h3 class="text-base font-black text-cyan-400 flex items-center gap-2">⚙️ Tetapan Game & Audio</h3>
+                <button onclick="toggleModal('modal-settings')" class="text-slate-400 hover:text-white font-bold text-sm">✕</button>
+            </div>
+
+            <div class="space-y-3 text-xs text-slate-200">
+                <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-800 space-y-3">
+                    <h4 class="font-bold text-cyan-400">🔊 Kawalan Kelantangan Audio:</h4>
+                    
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span>Muzik Latar (BGM):</span>
+                            <span id="bgm-vol-text" class="text-cyan-400 font-bold">50%</span>
+                        </div>
+                        <input type="range" id="bgm-volume" min="0" max="1" step="0.05" value="0.5" oninput="updateBGMVolume(this.value)" class="w-full accent-cyan-400 cursor-pointer">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span>Kesan Bunyi (SFX):</span>
+                            <span id="sfx-vol-text" class="text-amber-400 font-bold">80%</span>
+                        </div>
+                        <input type="range" id="sfx-volume" min="0" max="1" step="0.05" value="0.8" oninput="updateSFXVolume(this.value)" class="w-full accent-amber-400 cursor-pointer">
+                    </div>
+                </div>
+
+                <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-800 space-y-2">
+                    <h4 class="font-bold text-amber-400">🕹️ Mod Kawalan Telefon:</h4>
+                    <select id="control-type-select" onchange="changeControlType(this.value)" class="w-full bg-slate-800 border border-slate-600 rounded p-1.5 text-xs text-white">
+                        <option value="dpad">Arrow Controller (D-Pad)</option>
+                        <option value="joystick">Analog Touch Zone</option>
+                    </select>
+                </div>
+
+                <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-800 space-y-1.5">
+                    <h4 class="font-bold text-green-400">⌨️ Kawalan PC:</h4>
+                    <ul class="list-disc list-inside space-y-1 text-slate-300 text-[11px]">
+                        <li><b>WASD:</b> Bergerak</li>
+                        <li><b>Tetikus:</b> Putar Kamera 360°</li>
+                        <li><b>[E]:</b> Interaksi (Cakap/Petik)</li>
+                        <li><b>SPACE:</b> Melompat</li>
+                        <li><b>SHIFT:</b> Lari Pantas</li>
+                    </ul>
+                </div>
+            </div>
+
+            <button onclick="toggleModal('modal-settings')" class="btn-menu w-full text-xs font-bold text-cyan-300 border-cyan-500/50">Simpan & Tutup</button>
+        </div>
+    </div>
+
+    <!-- GAME OVER MODAL -->
+    <div id="modal-retry" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="glass-panel w-full max-w-md rounded-2xl p-6 text-center space-y-4 border-rose-500/50">
+            <div class="text-5xl">💀</div>
+            <h2 class="text-xl font-black text-rose-500">SANG KANCIL TEWAS!</h2>
+            
+            <p class="text-xs text-slate-300 leading-relaxed">
+                Anda telah kehabisan nyawa kerana diserang buaya atau lemas di dalam sungai!
+            </p>
+
+            <button onclick="location.reload()" class="btn-menu w-full text-xs font-bold bg-rose-600/80 border-rose-400 text-white hover:bg-rose-500">
+                🔄 Cuba Lagi
+            </button>
+        </div>
+    </div>
+
+    <!-- GAME WIN MODAL -->
+    <div id="modal-gameover" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="glass-panel w-full max-w-md rounded-2xl p-6 text-center space-y-4 border-amber-500/50">
+            <div id="gameover-icon" class="text-5xl">🌺</div>
+            <h2 id="gameover-title" class="text-xl font-black text-amber-400">Tahniah! Ibu Sang Kancil Sembuh!</h2>
+            
+            <p id="gameover-body" class="text-xs text-slate-300 leading-relaxed">
+                Anda telah berjaya membawa pulang Bunga Raya tepat pada waktunya. Ibu Sang Kancil kembali sihat dan seluruh hutan bergembira!
+            </p>
+
+            <div class="p-3 bg-slate-900/80 rounded-xl border border-amber-400/30 text-left space-y-1 text-[11px]">
+                <div class="font-bold text-amber-400 mb-1">📜 Mesej Moral & Nilai Murni:</div>
+                <p class="text-slate-300 italic leading-normal">
+                    "Keberanian lahir daripada kasih sayang. Kebijaksanaan membantu kita mencari jalan ketika menghadapi cabaran. Gunakan kebijaksanaan untuk membantu orang lain dan bertindak dengan jujur serta bertanggungjawab."
+                </p>
+            </div>
+
+            <button onclick="location.reload()" class="btn-menu w-full text-xs font-bold pulse-gold">🔄 Main Semula</button>
+        </div>
+    </div>
+
+    <!-- KAWALAN TELEFON -->
+    <div id="mobile-controls">
+        <div class="d-pad" id="dpad-container">
+            <button class="btn-dpad" id="btn-up">▲</button>
+            <button class="btn-dpad" id="btn-left">◀</button>
+            <button class="btn-dpad" id="btn-right">▶</button>
+            <button class="btn-dpad" id="btn-down">▼</button>
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn-action-mobile btn-action-blue" id="btn-jump"><span>🦘 LOMPAT</span></button>
+            <button class="btn-action-mobile btn-action-green" id="btn-action"><span>✋ INTERAKSI</span></button>
+        </div>
+    </div>
+
+    <script>
+        /* ==========================================
+           1. URL ASET MODEL & AUDIO SYSTEM
+           ========================================== */
+        const MODEL_URLS = {
+            tree: "https://raw.githubusercontent.com/smassrgb/Kancil-Buaya/main/Tree%20by%20Marc%20Sol%C3%A0%20-%206Yjt8nIwLsD.glb",
+            blackCaiman: "https://raw.githubusercontent.com/smassrgb/Kancil-Buaya/main/Black%20caiman%20by%20Poly%20by%20Google%20-%205etIv4omd7Z.glb",
+            rabbit: "https://raw.githubusercontent.com/smassrgb/Kancil-Buaya/main/Rabbit%20by%20Quaternius%20-%20mKev485XTR.glb",
+            owl: "https://raw.githubusercontent.com/smassrgb/Kancil-Buaya/main/Long%20eared%20owl%20by%20Poly%20by%20Google%20-%20dVPHzmMmXlg.glb",
+            house: "https://raw.githubusercontent.com/smassrgb/Kancil-Buaya/main/House%20by%20Quaternius%20-%20oJJIRwv6Bo.glb",
+            motherDeer: "https://raw.githubusercontent.com/smassrgb/Kancil-Buaya/main/Deer%20by%20Quaternius%20-%20T6Cs7tmMHJ.glb",
+            flower: "https://raw.githubusercontent.com/smassrgb/Kancil-Buaya/main/Flower%20by%20Poly%20by%20Google%20-%20fg5U0dl1Sd3.glb",
+            bgm: "https://raw.githubusercontent.com/smassrgb/Kancil-Buaya/main/Fun%20In%20The%20Jungle%20Upbeat%20Jungle%20Music%20For%20Media%20Cheerful%20Tribal%20Theme%20-%20Pinegroove%20Production%20Music%20(128k).mp3"
+        };
+
+        const gltfLoader = new THREE.GLTFLoader();
+        let bgmAudio = new Audio(MODEL_URLS.bgm);
+        bgmAudio.loop = true;
+        bgmAudio.volume = 0.5;
+
+        let sfxVolume = 0.8;
+        let audioCtx = null;
+
+        function playSFX(type) {
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+
+                const now = audioCtx.currentTime;
+
+                if (type === 'jump') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(150, now);
+                    osc.frequency.exponentialRampToValueAtTime(420, now + 0.15);
+                    gain.gain.setValueAtTime(sfxVolume * 0.4, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
+                    osc.start(now); osc.stop(now + 0.15);
+                } else if (type === 'interact') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, now);
+                    osc.frequency.setValueAtTime(659.25, now + 0.08);
+                    gain.gain.setValueAtTime(sfxVolume * 0.5, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+                    osc.start(now); osc.stop(now + 0.25);
+                } else if (type === 'damage') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(300, now);
+                    osc.frequency.exponentialRampToValueAtTime(50, now + 0.4);
+                    gain.gain.setValueAtTime(sfxVolume * 0.7, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
+                    osc.start(now); osc.stop(now + 0.4);
+                } else if (type === 'win') {
+                    [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.connect(gain); gain.connect(audioCtx.destination);
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(freq, now + idx * 0.12);
+                        gain.gain.setValueAtTime(sfxVolume * 0.5, now + idx * 0.12);
+                        gain.gain.linearRampToValueAtTime(0.01, now + idx * 0.12 + 0.25);
+                        osc.start(now + idx * 0.12);
+                        osc.stop(now + idx * 0.12 + 0.25);
+                    });
+                }
+            } catch(e) { console.log(e); }
+        }
+
+        function updateBGMVolume(val) {
+            bgmAudio.volume = parseFloat(val);
+            document.getElementById('bgm-vol-text').innerText = `${Math.round(val * 100)}%`;
+        }
+
+        function updateSFXVolume(val) {
+            sfxVolume = parseFloat(val);
+            document.getElementById('sfx-vol-text').innerText = `${Math.round(val * 100)}%`;
+        }
+
+        /* ==========================================
+           2. GAME STATE
+           ========================================== */
+        let gameState = {
+            lives: 3,
+            currentChapter: 1,
+            hasClue: false,
+            crocsLinedUp: false,
+            hasGoldenFlower: false,
+            chasePhase: false,
+            isPlaying: false
+        };
+
+        let activeNameTags = [];
+        let scene, camera, renderer;
+        let yaw = 0, pitch = 0;
+        let isMobile = false;
+        let cameraPointerId = null;
+
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+        let isSprinting = false;
+        let velocityY = 0;
+        let isGrounded = true;
+        const GRAVITY = -22.0;
+        const JUMP_STRENGTH = 8.5;
+        let prevTime = performance.now();
+
+        // Meshes
+        let crocs3D = [];
+        let kingCrocMesh, owlMesh, flowerMesh, motherMesh, rabbitMesh, houseMesh;
+        let riverMesh, riverGeo, waterTexture;
+
+        /* ==========================================
+           3. NAMETAG SYSTEM
+           ========================================== */
+        function createNameTag(parentMesh, text, heightOffset = 1.8, colorHex = '#ffffff') {
+            const container = document.getElementById('nametag-container');
+            const tagEl = document.createElement('div');
+            tagEl.className = 'name-tag';
+            tagEl.innerText = text;
+            tagEl.style.color = colorHex;
+            tagEl.style.borderColor = colorHex;
+            container.appendChild(tagEl);
+
+            const tagObj = { mesh: parentMesh, element: tagEl, heightOffset: heightOffset };
+            activeNameTags.push(tagObj);
+            return tagObj;
+        }
+
+        function updateNameTags() {
+            if (!camera) return;
+            const tempV = new THREE.Vector3();
+            activeNameTags.forEach(tag => {
+                if (!tag.mesh || !tag.mesh.parent) {
+                    tag.element.style.display = 'none';
+                    return;
+                }
+                tag.mesh.getWorldPosition(tempV);
+                tempV.y += tag.heightOffset;
+                tempV.project(camera);
+
+                if (tempV.z > 1) {
+                    tag.element.style.display = 'none';
+                } else {
+                    const x = (tempV.x * .5 + .5) * window.innerWidth;
+                    const y = (tempV.y * -.5 + .5) * window.innerHeight;
+                    tag.element.style.display = 'block';
+                    tag.element.style.left = `${x}px`;
+                    tag.element.style.top = `${y}px`;
+                }
+            });
+        }
+
+        /* ==========================================
+           4. PENJANAAN TEKSTUR RUMPUT & AIR (PROCEDURAL)
+           ========================================== */
+        // Penjana Tekstur Rumput Kanvas
+        function createGrassTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+
+            // Warna Dasar Tanah / Rumput
+            ctx.fillStyle = '#1b4d24';
+            ctx.fillRect(0, 0, 512, 512);
+
+            // Melukis Jalur & Bilah-Bilah Rumput
+            const grassColors = ['#14421b', '#236e32', '#2d8a40', '#38a84e', '#1e5929', '#42bd5a'];
+            for (let i = 0; i < 35000; i++) {
+                const x = Math.random() * 512;
+                const y = Math.random() * 512;
+                const len = 3 + Math.random() * 7;
+                ctx.strokeStyle = grassColors[Math.floor(Math.random() * grassColors.length)];
+                ctx.lineWidth = 1 + Math.random();
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(x + (Math.random() - 0.5) * 4, y - len);
+                ctx.stroke();
+            }
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+            texture.repeat.set(12, 6);
+            return texture;
+        }
+
+        // Penjana Tekstur Riak Air Kanvas
+        function createWaterTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = '#0284c7';
+            ctx.fillRect(0, 0, 512, 512);
+
+            // Lukis Jalur Caustics / Riak Air
+            ctx.fillStyle = '#ffffff';
+            for (let i = 0; i < 400; i++) {
+                const x = Math.random() * 512;
+                const y = Math.random() * 512;
+                const r = 5 + Math.random() * 25;
+                ctx.globalAlpha = 0.05 + Math.random() * 0.12;
+                ctx.beginPath();
+                ctx.ellipse(x, y, r, r * 0.4, Math.random() * Math.PI, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+            texture.repeat.set(6, 3);
+            return texture;
+        }
+
+        /* ==========================================
+           5. THREE.JS ENVIRONMENT BUILD
+           ========================================== */
+        function init3D() {
+            const container = document.getElementById('canvas-container');
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0a1f10);
+            scene.fog = new THREE.FogExp2(0x0a1f10, 0.025);
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 1.7, 24);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            container.appendChild(renderer.domElement);
+
+            detectMobile();
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xfef08a, 0.85);
+            scene.add(ambientLight);
+
+            const sunLight = new THREE.DirectionalLight(0xf97316, 1.25);
+            sunLight.position.set(15, 25, 15);
+            sunLight.castShadow = true;
+            scene.add(sunLight);
+
+            buildWorld();
+            setupControls();
+            setupMouseAndTouchLook();
+
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function detectMobile() {
+            isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+            if (isMobile) document.getElementById('mobile-controls').style.display = 'flex';
+        }
+
+        function loadGLTFModel(url, scale = 1, onComplete) {
+            gltfLoader.load(url, (gltf) => {
+                const model = gltf.scene;
+                model.scale.set(scale, scale, scale);
+                model.traverse((node) => {
+                    if (node.isMesh) node.castShadow = true;
+                });
+                if (onComplete) onComplete(model);
+            }, undefined, (error) => {
+                console.error("Gagal memuatkan model:", url, error);
+            });
+        }
+
+        function buildWorld() {
+            // Tekstur Rumput
+            const grassTexture = createGrassTexture();
+            const groundMat = new THREE.MeshStandardMaterial({ 
+                map: grassTexture,
+                roughness: 0.8,
+                metalness: 0.1
+            });
+
+            // Tebing Rumah & Hutan
+            const homeGroundGeo = new THREE.BoxGeometry(60, 2, 25);
+            const homeGround = new THREE.Mesh(homeGroundGeo, groundMat);
+            homeGround.position.set(0, -1, 20);
+            scene.add(homeGround);
+
+            // Tebing Seberang Sungai
+            const farGround = new THREE.Mesh(homeGroundGeo, groundMat);
+            farGround.position.set(0, -1, -20);
+            scene.add(farGround);
+
+            // SUNGAI BUAYA DENGAN TEKSTUR & OMBARK DINAMIK 3D
+            riverGeo = new THREE.PlaneGeometry(60, 20, 60, 20);
+            waterTexture = createWaterTexture();
+            
+            const riverMat = new THREE.MeshStandardMaterial({ 
+                color: 0x0284c7, 
+                map: waterTexture,
+                roughness: 0.05,
+                metalness: 0.3,
+                transparent: true, 
+                opacity: 0.88 
+            });
+            
+            riverMesh = new THREE.Mesh(riverGeo, riverMat);
+            riverMesh.rotation.x = -Math.PI / 2;
+            riverMesh.position.set(0, 0.05, 0);
+            scene.add(riverMesh);
+
+            // Tapak Platform Rumah
+            const baseGeo = new THREE.BoxGeometry(7, 1, 7);
+            const baseMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.8 });
+            const homeBase = new THREE.Mesh(baseGeo, baseMat);
+            homeBase.position.set(-10, 0.5, 24);
+            scene.add(homeBase);
+
+            // 1. Rumah Ibu Kancil (.glb)
+            loadGLTFModel(MODEL_URLS.house, 5.0, (model) => {
+                houseMesh = model;
+                houseMesh.position.set(-10, 1.0, 24);
+                scene.add(houseMesh);
+                createNameTag(houseMesh, "🏡 Rumah Ibu Kancil", 3.0, '#facc15');
+            });
+
+            // 2. Ibu Kancil (.glb)
+            loadGLTFModel(MODEL_URLS.motherDeer, 0.32, (model) => {
+                motherMesh = model;
+                motherMesh.position.set(-3, 0, 23);
+                scene.add(motherMesh);
+                createNameTag(motherMesh, "🦌 Ibu Sang Kancil", 2.2, '#f87171');
+            });
+
+            // 3. Burung Hantu Tua (.glb)
+            loadGLTFModel(MODEL_URLS.owl, 0.18, (model) => {
+                owlMesh = model;
+                owlMesh.position.set(4, 0, 18);
+                scene.add(owlMesh);
+                createNameTag(owlMesh, "🦉 Burung Hantu Tua", 1.5, '#c084fc');
+            });
+
+            // 4. Arnab Hutan (.glb)
+            loadGLTFModel(MODEL_URLS.rabbit, 0.25, (model) => {
+                rabbitMesh = model;
+                rabbitMesh.position.set(10, 0, 14);
+                scene.add(rabbitMesh);
+                createNameTag(rabbitMesh, "🐇 Arnab Hutan", 1.2, '#e2e8f0');
+            });
+
+            // 5. Ketua Buaya (.glb)
+            loadGLTFModel(MODEL_URLS.blackCaiman, 0.4, (model) => {
+                kingCrocMesh = model;
+                kingCrocMesh.position.set(0, 0.85, 8);
+                scene.add(kingCrocMesh);
+                createNameTag(kingCrocMesh, "👑 Ketua Buaya", 1.5, '#ef4444');
+            });
+
+            // 6. Bunga Raya (.glb)
+            loadGLTFModel(MODEL_URLS.flower, 1.2, (model) => {
+                flowerMesh = model;
+                flowerMesh.position.set(0, 1.0, -25);
+                scene.add(flowerMesh);
+                createNameTag(flowerMesh, "🌺 Bunga Raya", 1.8, '#facc15');
+            });
+
+            // 7. Pokok-Pokok Hiasan
+            const treePositions = [
+                [-18, 15], [-22, 25], [18, 18], [22, 26], [-12, 12], [14, 12],
+                [-20, -22], [20, -22], [-10, -28], [12, -26], [0, -28]
+            ];
+            treePositions.forEach(pos => {
+                createTree(pos[0], pos[1]);
+            });
+        }
+
+        function createTree(x, z) {
+            loadGLTFModel(MODEL_URLS.tree, 3.5, (model) => {
+                model.position.set(x, 3.8, z);
+                scene.add(model);
+            });
+        }
+
+        function arrangeCrocodilesInRiver() {
+            for (let i = 0; i < 8; i++) {
+                const zPos = 6 - (i * 2.2);
+                loadGLTFModel(MODEL_URLS.blackCaiman, 0.4, (croc) => {
+                    croc.position.set(0, 0.85, zPos);
+                    scene.add(croc);
+
+                    createNameTag(croc, `🐊 Buaya #${i+1}`, 1.2, '#4ade80');
+                    crocs3D.push({ mesh: croc, zPos: zPos, phase: i });
+                });
+            }
+            if (kingCrocMesh) kingCrocMesh.position.set(0, -10, 0);
+            gameState.crocsLinedUp = true;
+            gameState.currentChapter = 4;
+            updateMissionUI(4);
+        }
+
+        /* ==========================================
+           6. KAWALAN PLAYER & KAMERA
+           ========================================== */
+        function setupMouseAndTouchLook() {
+            const container = document.getElementById('canvas-container');
+
+            container.addEventListener('click', () => {
+                if (gameState.isPlaying && !isMobile) container.requestPointerLock();
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!gameState.isPlaying || isMobile) return;
+                if (document.pointerLockElement === container) {
+                    yaw -= e.movementX * 0.0025;
+                    pitch -= e.movementY * 0.0025;
+                    pitch = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, pitch));
+                }
+            });
+
+            let isTouching = false;
+            let lastX = 0, lastY = 0;
+
+            container.addEventListener('pointerdown', (e) => {
+                if (!gameState.isPlaying || !isMobile) return;
+                if (e.target.closest('#mobile-controls') || e.target.closest('.glass-panel')) return;
+                if (cameraPointerId !== null) return;
+                cameraPointerId = e.pointerId;
+                isTouching = true; lastX = e.clientX; lastY = e.clientY;
+            });
+
+            container.addEventListener('pointermove', (e) => {
+                if (!isTouching || !gameState.isPlaying || !isMobile || e.pointerId !== cameraPointerId) return;
+                const dx = e.clientX - lastX;
+                const dy = e.clientY - lastY;
+                lastX = e.clientX; lastY = e.clientY;
+
+                yaw -= dx * 0.004;
+                pitch -= dy * 0.004;
+                pitch = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, pitch));
+            });
+
+            const stopTouch = (e) => {
+                if (e && e.pointerId === cameraPointerId) {
+                    isTouching = false; cameraPointerId = null;
+                }
+            };
+            container.addEventListener('pointerup', stopTouch);
+            container.addEventListener('pointercancel', stopTouch);
+        }
+
+        function setupControls() {
+            document.addEventListener('keydown', (e) => {
+                if (!gameState.isPlaying) return;
+                switch(e.code) {
+                    case 'KeyW': case 'ArrowUp': moveForward = true; break;
+                    case 'KeyS': case 'ArrowDown': moveBackward = true; break;
+                    case 'KeyA': case 'ArrowLeft': moveLeft = true; break;
+                    case 'KeyD': case 'ArrowRight': moveRight = true; break;
+                    case 'ShiftLeft': case 'ShiftRight': isSprinting = true; break;
+                    case 'Space': triggerJump(); break;
+                    case 'KeyE': interactAction(); break;
+                }
+            });
+
+            document.addEventListener('keyup', (e) => {
+                switch(e.code) {
+                    case 'KeyW': case 'ArrowUp': moveForward = false; break;
+                    case 'KeyS': case 'ArrowDown': moveBackward = false; break;
+                    case 'KeyA': case 'ArrowLeft': moveLeft = false; break;
+                    case 'KeyD': case 'ArrowRight': moveRight = false; break;
+                    case 'ShiftLeft': case 'ShiftRight': isSprinting = false; break;
+                }
+            });
+
+            bindTouch('btn-up', (v) => moveForward = v);
+            bindTouch('btn-down', (v) => moveBackward = v);
+            bindTouch('btn-left', (v) => moveLeft = v);
+            bindTouch('btn-right', (v) => moveRight = v);
+
+            document.getElementById('btn-action')?.addEventListener('touchstart', (e) => {
+                e.preventDefault(); interactAction();
+            });
+            document.getElementById('btn-jump')?.addEventListener('touchstart', (e) => {
+                e.preventDefault(); triggerJump();
+            });
+        }
+
+        function bindTouch(id, fn) {
+            const btn = document.getElementById(id);
+            if(!btn) return;
+            btn.addEventListener('touchstart', (e) => { e.preventDefault(); fn(true); });
+            btn.addEventListener('touchend', (e) => { e.preventDefault(); fn(false); });
+        }
+
+        function triggerJump() {
+            if (isGrounded) {
+                velocityY = JUMP_STRENGTH;
+                isGrounded = false;
+                playSFX('jump');
+            }
+        }
+
+        /* ==========================================
+           7. DIALOG & INTERAKSI STORY
+           ========================================== */
+        function interactAction() {
+            playSFX('interact');
+            const pPos = new THREE.Vector3(camera.position.x, 0, camera.position.z);
+
+            if (motherMesh && pPos.distanceTo(motherMesh.position) < 3.0) {
+                if (gameState.hasGoldenFlower) {
+                    endGameWin();
+                } else {
+                    showDialog("🦌", "Ibu Sang Kancil", "Pergilah anakku... jangan risaukan ibu. Sang Kancil: Saya akan pulang membawa penawar Bunga Raya!");
+                }
+                return;
+            }
+
+            if (owlMesh && pPos.distanceTo(owlMesh.position) < 3.0) {
+                gameState.hasClue = true;
+                updateMissionUI(2);
+                showDialog("🦉", "Burung Hantu Tua", "Hanya Bunga Raya di seberang Sungai Buaya mampu menyembuhkan ibumu. Ingat, tipu buaya dengan memberitahu ada jamuan daripada Raja Hutan!");
+                return;
+            }
+
+            if (rabbitMesh && pPos.distanceTo(rabbitMesh.position) < 3.0) {
+                showDialog("🐇", "Arnab Hutan", "Aku terdengar Bunga Raya itu berada di seberang sungai... tapi berhati-hatilah dengan Ketua Buaya!");
+                return;
+            }
+
+            if (!gameState.crocsLinedUp && kingCrocMesh && pPos.distanceTo(kingCrocMesh.position) < 3.5) {
+                showCrocodileTrickDialog();
+                return;
+            }
+
+            if (gameState.crocsLinedUp && !gameState.hasGoldenFlower && flowerMesh && pPos.distanceTo(flowerMesh.position) < 3.0) {
+                gameState.hasGoldenFlower = true;
+                scene.remove(flowerMesh);
+                document.getElementById('slot-0').classList.add('has-item');
+                document.getElementById('hud-flower-status').innerText = "Sudah Dikutip! 🌺";
+                document.getElementById('hud-flower-status').className = "text-xs text-amber-400 font-extrabold";
+                
+                showDialog("🌺", "Bunga Raya", "Anda berjaya memetik Bunga Raya! Tiba-tiba Ketua Buaya menyedari dia ditipu! BAB 6: LARI PULANG KE RUMAH IBU!");
+                triggerCrocodileChase();
+                return;
+            }
+        }
+
+        function showCrocodileTrickDialog() {
+            document.getElementById('npc-avatar').innerText = "👑";
+            document.getElementById('npc-title').innerText = "Ketua Buaya";
+            document.getElementById('npc-subtitle').innerText = "Pilihan Helah Dialog (Bab 3):";
+            document.getElementById('npc-message').innerText = "Grrr! Berani kau datang ke sungai ini Sang Kancil! Ada hajat apa kau ke mari?";
+            document.getElementById('dialog-options').classList.remove('hidden');
+            document.getElementById('btn-dialog-close').classList.add('hidden');
+            document.getElementById('modal-dialog').classList.remove('hidden');
+        }
+
+        function chooseCrocodileOption(isCorrect) {
+            document.getElementById('dialog-options').classList.add('hidden');
+            document.getElementById('btn-dialog-close').classList.remove('hidden');
+
+            if (isCorrect) {
+                document.getElementById('npc-message').innerText = "Ketua Buaya: 'Apa?! Raja Hutan mahu mengira kami untuk jamuan?! Baiklah! Hai buaya sekalian, berbaris dari tebing ini ke seberang!'";
+                arrangeCrocodilesInRiver();
+            } else {
+                document.getElementById('npc-message').innerText = "Ketua Buaya: 'Grrr! Jangan nak merepek! Aku tidak akan lepaskan kau!' (Jawapan salah, cuba lagi!)";
+            }
+        }
+
+        function showDialog(avatar, title, message) {
+            document.getElementById('npc-avatar').innerText = avatar;
+            document.getElementById('npc-title').innerText = title;
+            document.getElementById('npc-subtitle').innerText = "Jalan Cerita";
+            document.getElementById('npc-message').innerText = message;
+            document.getElementById('dialog-options').classList.add('hidden');
+            document.getElementById('btn-dialog-close').classList.remove('hidden');
+            document.getElementById('modal-dialog').classList.remove('hidden');
+        }
+
+        function closeDialog() {
+            document.getElementById('modal-dialog').classList.add('hidden');
+        }
+
+        function triggerCrocodileChase() {
+            gameState.chasePhase = true;
+            gameState.currentChapter = 6;
+            updateMissionUI(5);
+            if (kingCrocMesh) kingCrocMesh.position.set(0, 0.85, -20);
+        }
+
+        function updateMissionUI(step) {
+            for(let i=1; i<=5; i++) {
+                const el = document.getElementById(`misi-${i}`);
+                if (i < step) {
+                    el.className = "text-slate-500 line-through";
+                } else if (i === step) {
+                    el.className = "text-amber-300 font-bold";
+                }
+            }
+        }
+
+        function takeDamage() {
+            playSFX('damage');
+            gameState.lives--;
+            let hearts = "";
+            for(let i=0; i<gameState.lives; i++) hearts += "❤️";
+            document.getElementById('hud-lives').innerText = hearts || "💀";
+
+            if (gameState.lives <= 0) {
+                gameState.isPlaying = false;
+                document.getElementById('modal-retry').classList.remove('hidden');
+            } else {
+                camera.position.set(0, 1.7, gameState.hasGoldenFlower ? -18 : 18);
+            }
+        }
+
+        /* ==========================================
+           8. MAIN GAME LOOP & ANIMASI OMBARK AIR
+           ========================================== */
+        function updatePlayerPhysics(delta, time) {
+            if (!gameState.isPlaying) return;
+
+            const euler = new THREE.Euler(0, 0, 0, 'YXZ');
+            euler.x = pitch; euler.y = yaw;
+            camera.quaternion.setFromEuler(euler);
+
+            const speed = isSprinting ? 9.5 : 6.0;
+            const dir = new THREE.Vector3();
+            if (moveForward) dir.z -= 1;
+            if (moveBackward) dir.z += 1;
+            if (moveLeft) dir.x -= 1;
+            if (moveRight) dir.x += 1;
+            dir.normalize();
+
+            if (dir.lengthSq() > 0) {
+                const moveVec = dir.clone().applyEuler(new THREE.Euler(0, yaw, 0));
+                camera.position.x += moveVec.x * speed * delta;
+                camera.position.z += moveVec.z * speed * delta;
+            }
+
+            // Graviti
+            velocityY += GRAVITY * delta;
+            camera.position.y += velocityY * delta;
+
+            if (camera.position.y <= 1.7) {
+                camera.position.y = 1.7;
+                velocityY = 0;
+                isGrounded = true;
+            }
+
+            // Semak Jatuh Sungai
+            if (camera.position.z < 7.5 && camera.position.z > -9.5 && camera.position.y <= 1.7) {
+                let safeOnCroc = false;
+                crocs3D.forEach(c => {
+                    const dist = new THREE.Vector2(camera.position.x, camera.position.z).distanceTo(new THREE.Vector2(c.mesh.position.x, c.mesh.position.z));
+                    if (dist < 1.3) safeOnCroc = true;
+                });
+
+                if (!safeOnCroc) {
+                    takeDamage();
+                }
+            }
+
+            // ANIMASI TEKSTUR AIR & OMBARK DINAMIK 3D
+            if (riverMesh) {
+                // Pergerakan Tekstur Aliran Air
+                waterTexture.offset.x += delta * 0.06;
+                waterTexture.offset.y += delta * 0.03;
+
+                // Deformasi Bucu Gelombang Air (Wave Animation)
+                const pos = riverGeo.attributes.position;
+                for (let i = 0; i < pos.count; i++) {
+                    const u = pos.getX(i);
+                    const v = pos.getY(i);
+                    const z = Math.sin(u * 0.6 + time * 0.003) * 0.12 + Math.cos(v * 0.8 + time * 0.002) * 0.08;
+                    pos.setZ(i, z);
+                }
+                pos.needsUpdate = true;
+                riverGeo.computeVertexNormals();
+            }
+
+            // Animasi Buaya Terapung
+            crocs3D.forEach((c, idx) => {
+                c.mesh.position.x = Math.sin(time * 0.003 + idx) * 0.6;
+            });
+
+            // Fasa Kejaran Buaya
+            if (gameState.chasePhase && kingCrocMesh) {
+                kingCrocMesh.position.z += delta * 5.0;
+            }
+
+            // HUD Interaksi Prompt
+            const pPos = new THREE.Vector3(camera.position.x, 0, camera.position.z);
+            const prompt = document.getElementById('interaction-prompt');
+            let near = false;
+
+            if (owlMesh && pPos.distanceTo(owlMesh.position) < 3.0) {
+                prompt.innerText = "Tekan [E] / Sentuh: Bercakap dengan Burung Hantu";
+                prompt.classList.remove('hidden'); near = true;
+            } else if (!gameState.crocsLinedUp && kingCrocMesh && pPos.distanceTo(kingCrocMesh.position) < 3.5) {
+                prompt.innerText = "Tekan [E] / Sentuh: Tipu Ketua Buaya";
+                prompt.classList.remove('hidden'); near = true;
+            } else if (gameState.crocsLinedUp && !gameState.hasGoldenFlower && flowerMesh && pPos.distanceTo(flowerMesh.position) < 3.0) {
+                prompt.innerText = "Tekan [E] / Sentuh: Petik Bunga Raya!";
+                prompt.classList.remove('hidden'); near = true;
+            } else if (motherMesh && pPos.distanceTo(motherMesh.position) < 3.0) {
+                prompt.innerText = "Tekan [E] / Sentuh: Berikan Penawar kepada Ibu";
+                prompt.classList.remove('hidden'); near = true;
+            }
+
+            if (!near) prompt.classList.add('hidden');
+
+            drawMiniMap();
+            updateNameTags();
+        }
+
+        function drawMiniMap() {
+            const canvas = document.getElementById('minimap-canvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, 80, 80);
+
+            const scale = 1.2;
+            const px = 40 + camera.position.x * scale;
+            const pz = 40 + camera.position.z * scale;
+
+            ctx.fillStyle = '#22c55e';
+            ctx.beginPath(); ctx.arc(px, pz, 3.5, 0, Math.PI * 2); ctx.fill();
+
+            ctx.fillStyle = '#ef4444';
+            crocs3D.forEach(c => {
+                const cx = 40 + c.mesh.position.x * scale;
+                const cz = 40 + c.mesh.position.z * scale;
+                ctx.fillRect(cx - 2, cz - 2, 4, 4);
+            });
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = performance.now();
+            const delta = Math.min((time - prevTime) / 1000, 0.1);
+            prevTime = time;
+
+            updatePlayerPhysics(delta, time);
+            renderer.render(scene, camera);
+        }
+
+        function startGame() {
+            document.getElementById('main-menu').classList.add('hidden');
+            document.getElementById('game-hud').classList.remove('hidden');
+            document.getElementById('game-hud').classList.add('flex');
+            gameState.isPlaying = true;
+
+            bgmAudio.play().catch(e => console.log("Perlu interaksi untuk mainkan audio:", e));
+        }
+
+        function endGameWin() {
+            playSFX('win');
+            gameState.isPlaying = false;
+            document.getElementById('modal-gameover').classList.remove('hidden');
+        }
+
+        function toggleModal(id) {
+            document.getElementById(id).classList.toggle('hidden');
+        }
+
+        function changeControlType(type) {
+            const container = document.getElementById('dpad-container');
+            if (type === 'joystick') {
+                container.style.opacity = '0.5';
+            } else {
+                container.style.opacity = '1.0';
+            }
+        }
+
+        function onWindowResize() {
+            if (!camera || !renderer) return;
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        window.onload = () => {
+            init3D();
+            animate();
+        };
+    </script>
+</body>
+</html>
